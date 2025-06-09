@@ -1,0 +1,73 @@
+-- 1. Total number of customers
+SELECT COUNT(*) AS total_customers FROM Customers;
+
+-- 2. List all orders with customer name and total amount
+SELECT 
+    Orders.order_id,
+    Customers.name AS customer_name,
+    Orders.total_amount,
+    Orders.order_date
+FROM Orders
+JOIN Customers ON Orders.customer_id = Customers.customer_id
+ORDER BY Orders.order_date DESC;
+
+-- 3. Get top 5 products by sales quantity
+SELECT 
+    Products.name AS product_name,
+    SUM(OrderItems.quantity) AS total_sold
+FROM OrderItems
+JOIN Products ON OrderItems.product_id = Products.product_id
+GROUP BY Products.name
+ORDER BY total_sold DESC
+LIMIT 5;
+
+-- 4. Total revenue per category
+SELECT 
+    Products.category,
+    SUM(OrderItems.quantity * OrderItems.price) AS total_revenue
+FROM OrderItems
+JOIN Products ON OrderItems.product_id = Products.product_id
+GROUP BY Products.category;
+
+-- 5. Customers with orders above ₹10,000
+SELECT 
+    Customers.name,
+    Orders.order_id,
+    Orders.total_amount
+FROM Orders
+JOIN Customers ON Orders.customer_id = Customers.customer_id
+WHERE Orders.total_amount > 10000;
+
+-- 6. Monthly revenue trend
+SELECT 
+    strftime('%Y-%m', order_date) AS month,
+    SUM(total_amount) AS monthly_revenue
+FROM Orders
+GROUP BY month
+ORDER BY month;
+
+-- 7. Create a view for top customers
+CREATE VIEW Top_Customers AS
+SELECT 
+    Customers.customer_id,
+    Customers.name,
+    SUM(Orders.total_amount) AS total_spent
+FROM Customers
+JOIN Orders ON Customers.customer_id = Orders.customer_id
+GROUP BY Customers.customer_id
+HAVING total_spent > 50000;
+
+-- 8. Subquery to find customers who ordered the most expensive product
+SELECT name
+FROM Customers
+WHERE customer_id IN (
+    SELECT Orders.customer_id
+    FROM Orders
+    JOIN OrderItems ON Orders.order_id = OrderItems.order_id
+    WHERE product_id = (
+        SELECT product_id FROM Products ORDER BY price DESC LIMIT 1
+    )
+);
+
+-- 9. Create index on Orders table for faster querying by customer_id
+CREATE INDEX idx_customer_id ON Orders(customer_id);
